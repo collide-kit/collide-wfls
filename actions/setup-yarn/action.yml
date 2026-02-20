@@ -1,0 +1,49 @@
+name: Setup Yarn
+description: 'Installs and configures Yarn via Corepack'
+author: 'gratisv'
+
+branding:
+  icon: 'box'
+  color: 'blue'
+
+inputs:
+  yarn-version:
+    description: 'Yarn version to install'
+    required: false
+    default: 'latest'
+
+outputs:
+  yarn-version:
+    description: 'Installed Yarn version'
+    value: ${{ steps.get-yarn-version.outputs.version }}
+
+  yarn-cache-dir:
+    description: 'Yarn cache directory path'
+    value: ${{ steps.yarn-cache-dir.outputs.dir }}
+
+runs:
+  using: composite
+  steps:
+    - name: Enable Corepack
+      shell: bash
+      run: corepack enable
+
+    - name: Setup Yarn
+      shell: bash
+      run: corepack prepare yarn@${{ inputs.yarn-version }} --activate
+
+    - name: Get Yarn version
+      id: get-yarn-version
+      shell: bash
+      run: |
+        version=$(yarn --version)
+        echo "version=$version" >> $GITHUB_OUTPUT
+        echo "✅ Yarn installed: $version"
+
+    - name: Get Yarn cache directory
+      id: yarn-cache-dir
+      shell: bash
+      run: |
+        dir=$(yarn config get cacheFolder)
+        echo "dir=$dir" >> $GITHUB_OUTPUT
+        echo "📦 Yarn cache directory: $dir"

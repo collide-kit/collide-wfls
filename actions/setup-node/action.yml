@@ -1,0 +1,33 @@
+name: Setup Node.js
+description: 'Installs and configures Node.js'
+author: 'gratisv'
+
+branding:
+  icon: 'download'
+  color: 'green'
+
+inputs:
+  node-version:
+    description: 'Node.js version to install'
+    required: false
+    default: 'latest'
+
+outputs:
+  node-version:
+    description: 'Installed Node.js version'
+    value: ${{ steps.setup-node.outputs.node-version }}
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node.js
+      id: setup-node
+      uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Verify Node.js installation
+      shell: bash
+      run: |
+        node_version=$(node --version)
+        echo "✅ Node.js installed: $node_version"

@@ -1,0 +1,138 @@
+name: Setup CI
+description: 'Sets up the CI environment with Node.js and Yarn'
+author: 'gratisv'
+
+branding:
+  icon: 'package'
+  color: 'blue'
+
+inputs:
+  node-version:
+    description: 'Node.js version to install'
+    required: false
+    default: 'latest'
+
+  yarn-version:
+    description: 'Yarn version to install'
+    required: false
+    default: 'latest'
+
+  enable-cache:
+    description: 'Enable dependency caching'
+    required: false
+    default: 'true'
+
+  install-dependencies:
+    description: 'Install dependencies with yarn install --immutable'
+    required: false
+    default: 'true'
+
+outputs:
+  node-version:
+    description: 'Installed Node.js version'
+    value: ${{ steps.setup-node.outputs.node-version }}
+
+  yarn-version:
+    description: 'Installed Yarn version'
+    value: ${{ steps.get-yarn-version.outputs.version }}
+
+  cache-hit:
+    description: 'Whether cache was restored (true/false)'
+    value: ${{ steps.cache-deps.outputs.cache-hit }}
+
+  yarn-cache-dir:
+    description: 'Yarn cache directory path'
+    value: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+
+  install-duration:
+    description: 'Dependency installation duration in seconds'
+    value: ${{ steps.install-deps.outputs.duration }}
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node.js
+      id: setup-node
+      uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Enable Corepack
+      shell: bash
+      run: corepack enable
+
+    - name: Setup Yarn
+      shell: bash
+      run: corepack prepare yarn@${{ inputs.yarn-version }} --activate
+
+    - name: Get Yarn version
+      id: get-yarn-version
+      shell: bash
+      run: echo "version=$(yarn --version)" >> $GITHUB_OUTPUT
+
+    - name: Get Yarn cache directory path
+      if: inputs.enable-cache == 'true'
+      id: yarn-cache-dir-path
+      shell: bash
+      run: echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
+
+    - name: Cache Yarn dependencies
+      id: cache-deps
+      if: inputs.enable-cache == 'true'
+      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+      with:
+        path: |
+          ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          node_modules
+        key: ${{ runner.os }}-node-${{ inputs.node-version }}-yarn-${{ inputs.yarn-version }}-${{ hashFiles('**/yarn.lock', '**/package.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-${{ inputs.node-version }}-yarn-${{ inputs.yarn-version }}-
+          ${{ runner.os }}-node-${{ inputs.node-version }}-
+          ${{ runner.os }}-
+
+    - name: Cache status
+      if: inputs.enable-cache == 'true'
+      shell: bash
+      run: |
+        if [[ "${{ steps.cache-deps.outputs.cache-hit }}" == "true" ]]; then
+          echo "✅ Cache restored successfully"
+        else
+          echo "⚠️ Cache not found, will install from scratch"
+        fi
+
+    - name: Install dependencies
+      id: install-deps
+      if: inputs.install-dependencies == 'true'
+      shell: bash
+      run: |
+        echo "📦 Installing dependencies with Yarn $(yarn --version)..."
+        start_time=$(date +%s)
+
+        if ! yarn install --immutable; then
+          echo "❌ Failed to install dependencies"
+          echo "Yarn version: $(yarn --version)"
+          echo "Node version: $(node --version)"
+          echo "Working directory: $(pwd)"
+          exit 1
+        fi
+
+        end_time=$(date +%s)
+        duration=$((end_time - start_time))
+        echo "✅ Dependencies installed successfully in ${duration}s"
+        echo "duration=${duration}" >> $GITHUB_OUTPUT
+
+    - name: Setup Summary
+      shell: bash
+      run: |
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "📋 CI Environment Summary"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "🟢 Node.js: ${{ steps.setup-node.outputs.node-version }}"
+        echo "🔵 Yarn: ${{ steps.get-yarn-version.outputs.version }}"
+        if [[ "${{ inputs.enable-cache }}" == "true" ]]; then
+          echo "💾 Cache: ${{ steps.cache-deps.outputs.cache-hit == 'true' && 'HIT ✅' || 'MISS ⚠️' }}"
+        fi
+        if [[ "${{ inputs.install-dependencies }}" == "true" ]]; then
+          echo "⏱️  Install time: ${{ steps.install-deps.outputs.duration }}s"
+        fi
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

@@ -1,0 +1,132 @@
+# ------------------------------------------------------
+# Node / Dependencies
+# ------------------------------------------------------
+node_modules/
+.pnp.*
+.pnp/
+.pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-lock.yaml
+package-lock.json
+bun.lock
+lerna-debug.log*
+
+# ------------------------------------------------------
+# Yarn Berry (strict)
+# Ignore .yarn except essential subfolder's
+# ------------------------------------------------------
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# ------------------------------------------------------
+# Nx Monorepo
+# ------------------------------------------------------
+.nx/cache/
+.nx/workspace-data/
+cursor/
+.cursor/
+claude/
+.claude/
+
+# ------------------------------------------------------
+# Build & Output
+# ------------------------------------------------------
+dist/
+dist-ssr/
+build/
+out/
+out-tsc/
+temp/
+tmp/
+lib/
+lib-*/
+.generated/
+generated/
+__generated__/
+.next/
+storybook-static/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# ------------------------------------------------------
+# Framework Specific
+# ------------------------------------------------------
+.vercel/
+.netlify/
+serverless/
+.docusaurus/
+.nuxt/
+.output/
+
+# ------------------------------------------------------
+# Logs
+# ------------------------------------------------------
+logs/
+*.log
+*.tmp
+*.temp
+*.pid
+*.seed
+*.pid.lock
+
+# ------------------------------------------------------
+# Environment Variables & Sensitive Files
+# ------------------------------------------------------
+.env
+.env*.local
+!.env.example
+*config.private.*
+*credentials.*
+*secret.*
+*token.*
+*key.*
+
+# ------------------------------------------------------
+# IDE / Editors
+# ------------------------------------------------------
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# JetBrains
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Other Editors
+.project
+.classpath
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ------------------------------------------------------
+# System Files
+# ------------------------------------------------------
+.DS_Store
+Thumbs.db
+
+# ------------------------------------------------------
+# Certificates & Keys
+# ------------------------------------------------------
+*.pem
+certificates/
+
+# ------------------------------------------------------
+# Backup / Misc
+# ------------------------------------------------------
+*.bak
+*.backup
+*~
