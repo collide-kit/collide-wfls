@@ -1,0 +1,113 @@
+{
+  "name": "@collide-kit/collide-wfls",
+  "version": "1.0.0",
+  "description": "⚙️ GitHub Actions preset for Collide Tech",
+  "keywords": [
+    "@collide-kit:github-actions",
+    "@collide-kit:workflows",
+    "@collide-kit:ci-cd",
+    "@collide-kit:composite-actions"
+  ],
+  "homepage": "https://github.com/collide-kit/collide-wfls#readme",
+  "bugs": "https://github.com/collide-kit/collide-wfls/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/collide-kit/collide-wfls.git"
+  },
+  "funding": "https://github.com/sponsors/gratisv",
+  "license": "MIT",
+  "author": {
+    "name": "gratisv",
+    "email": "gratis.v@proton.me",
+    "url": "https://github.com/gratisv"
+  },
+  "type": "module",
+  "files": [
+    "default.json"
+  ],
+  "scripts": {
+    "fmt:check": "prettier -c .",
+    "fmt:check:cache": "prettier -c . --cache",
+    "fmt:fix": "prettier -w . --log-level=warn",
+    "fmt:fix:cache": "prettier -w . --cache --log-level=warn"
+  },
+  "prettier": {
+    "arrowParens": "avoid",
+    "bracketSameLine": false,
+    "bracketSpacing": true,
+    "endOfLine": "lf",
+    "jsxSingleQuote": true,
+    "multilineArraysWrapThreshold": 3,
+    "plugins": [
+      "@prettier/plugin-oxc",
+      "prettier-plugin-packagejson",
+      "prettier-plugin-sort-json",
+      "prettier-plugin-multiline-arrays"
+    ],
+    "printWidth": 120,
+    "proseWrap": "preserve",
+    "quoteProps": "as-needed",
+    "semi": true,
+    "singleQuote": true,
+    "tabWidth": 4,
+    "trailingComma": "all",
+    "useTabs": true,
+    "overrides": [
+      {
+        "files": [
+          "**/node_modules/**",
+          "**/.store/**",
+          "**/{pnpm-lock.yaml,package-lock.json,yarn.lock}",
+          "**/.yarn/{cache,unplugged}/**",
+          "**/.pnp.*",
+          "**/{dist,build,out,lib,.cache,.turbo}/**",
+          "**/lib-*/**",
+          "**/*.tsbuildinfo",
+          "**/.{next,nuxt,output,vercel,netlify,serverless,docusaurus}/**",
+          "**/.vitepress/cache/**",
+          "**/.vite-inspect/**",
+          "**/{coverage,.nyc_output}/**",
+          "**/.{vscode,idea}/**",
+          "**/*.{min.js,min.css,bundle.js}",
+          "**/vendor/**",
+          "**/{auto-import?(s),components,typed-router}.d.ts",
+          "**/.changeset/**",
+          "**/LICENSE*",
+          "**/CHANGELOG*.md",
+          "**/__snapshots__"
+        ],
+        "options": {
+          "requirePragma": true
+        }
+      },
+      {
+        "files": [
+          "**/*.{json,jsonc,json5,md,mdx,markdown,mdown,yml,yaml}"
+        ],
+        "options": {
+          "tabWidth": 2,
+          "useTabs": false
+        }
+      },
+      {
+        "files": [
+          "**/package.json"
+        ],
+        "options": {
+          "jsonRecursiveSort": false
+        }
+      }
+    ]
+  },
+  "devDependencies": {
+    "@prettier/plugin-oxc": "^0.1.3",
+    "prettier": "^3.8.1",
+    "prettier-plugin-multiline-arrays": "^4.1.3",
+    "prettier-plugin-packagejson": "^3.0.0",
+    "prettier-plugin-sort-json": "^4.2.0"
+  },
+  "packageManager": "yarn@4.12.0",
+  "publishConfig": {
+    "access": "public"
+  }
+}
