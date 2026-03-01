@@ -28,8 +28,16 @@ inputs:
 
 outputs:
   cache-hit:
-    description: 'Whether cache was restored (true/false)'
+    description: 'Whether cache was restored via primary key (true/false)'
     value: ${{ steps.cache-deps.outputs.cache-hit }}
+
+  cache-key:
+    description: 'Primary cache key used'
+    value: ${{ steps.cache-deps.outputs.cache-primary-key }}
+
+  cache-matched-key:
+    description: 'Actual key that was restored (primary or restore-key fallback)'
+    value: ${{ steps.cache-deps.outputs.cache-matched-key }}
 
 runs:
   using: composite
@@ -48,12 +56,62 @@ runs:
           ${{ runner.os }}-node-${{ inputs.node-version }}-
           ${{ runner.os }}-
 
-    - name: Cache status
+    - name: Cache summary
       if: inputs.enable-cache == 'true'
       shell: bash
       run: |
-        if [[ "${{ steps.cache-deps.outputs.cache-hit }}" == "true" ]]; then
-          echo "✅ Cache restored successfully"
+        HIT="${{ steps.cache-deps.outputs.cache-hit }}"
+        PRIMARY="${{ steps.cache-deps.outputs.cache-primary-key }}"
+        MATCHED="${{ steps.cache-deps.outputs.cache-matched-key }}"
+        PATHS="${{ inputs.yarn-cache-dir }}, node_modules"
+
+        if [[ "$HIT" == "true" ]]; then
+          STATUS_LOG="✅  HIT"
+          STATUS_MD="✅ HIT"
+        elif [[ -n "$MATCHED" ]]; then
+          STATUS_LOG="🔶  PARTIAL (restore-key)"
+          STATUS_MD="🔶 PARTIAL (restore-key)"
         else
-          echo "⚠️ Cache not found, will install from scratch"
+          STATUS_LOG="⚠️  MISS"
+          STATUS_MD="⚠️ MISS"
         fi
+
+        COL1=16
+        COL2=50
+
+        pad_right() { printf "%-${1}s" "${2}"; }
+
+        border_top() { printf "┌"; printf '─%.0s' $(seq 1 $((COL1 + 2))); printf "┬"; printf '─%.0s' $(seq 1 $((COL2 + 2))); printf "┐\n"; }
+        border_mid() { printf "├"; printf '─%.0s' $(seq 1 $((COL1 + 2))); printf "┼"; printf '─%.0s' $(seq 1 $((COL2 + 2))); printf "┤\n"; }
+        border_bot() { printf "└"; printf '─%.0s' $(seq 1 $((COL1 + 2))); printf "┴"; printf '─%.0s' $(seq 1 $((COL2 + 2))); printf "┘\n"; }
+        row() { printf "│ %s │ %s │\n" "$(pad_right $COL1 "$1")" "$(pad_right $COL2 "${2:0:$COL2}")"; }
+
+        border_top
+        row "📦 Cache Deps" "Summary"
+        border_mid
+        row "Status"   "$STATUS_LOG"
+        row "OS"       "${{ runner.os }}"
+        row "Node.js"  "${{ inputs.node-version }}"
+        row "Yarn"     "${{ inputs.yarn-version }}"
+        row "Primary key" "$PRIMARY"
+        if [[ -n "$MATCHED" && "$MATCHED" != "$PRIMARY" ]]; then
+          row "Restored from" "$MATCHED"
+        fi
+        row "Paths" "$PATHS"
+        border_bot
+
+        {
+          echo "## 📦 Cache Dependencies"
+          echo ""
+          echo "| Property | Value |"
+          echo "|:---------|:------|"
+          echo "| Status | $STATUS_MD |"
+          echo "| OS | \`${{ runner.os }}\` |"
+          echo "| Node.js | \`${{ inputs.node-version }}\` |"
+          echo "| Yarn | \`${{ inputs.yarn-version }}\` |"
+          echo "| Primary key | \`$PRIMARY\` |"
+          if [[ -n "$MATCHED" && "$MATCHED" != "$PRIMARY" ]]; then
+            echo "| Restored from | \`$MATCHED\` |"
+          fi
+          echo "| Paths | \`${{ inputs.yarn-cache-dir }}\`, \`node_modules\` |"
+        } >> "$GITHUB_STEP_SUMMARY"
