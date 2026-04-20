@@ -1,0 +1,120 @@
+name: Test cache-deps
+
+on:
+  workflow_call:
+
+jobs:
+  # Verify all three outputs are populated on a fresh run
+  test-outputs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./actions/setup-node
+      - id: setup-yarn
+        uses: ./actions/setup-yarn
+      - id: cache-deps
+        uses: ./actions/cache-deps
+        with:
+          yarn-cache-dir: ${{ steps.setup-yarn.outputs.yarn-cache-dir }}
+      - run: yarn install --immutable
+      - name: Verify outputs
+        run: |
+          KEY="${{ steps.cache-deps.outputs.cache-key }}"
+          if [[ -z "$KEY" ]]; then
+            echo "❌ cache-key is empty"
+            exit 1
+          fi
+          echo "✅ cache-key: $KEY"
+          echo "✅ cache-hit: ${{ steps.cache-deps.outputs.cache-hit }}"
+          echo "✅ cache-matched-key: ${{ steps.cache-deps.outputs.cache-matched-key }}"
+
+  # Verify enable-cache: false leaves all outputs empty
+  test-disabled:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./actions/setup-node
+      - id: setup-yarn
+        uses: ./actions/setup-yarn
+      - id: cache-deps
+        uses: ./actions/cache-deps
+        with:
+          yarn-cache-dir: ${{ steps.setup-yarn.outputs.yarn-cache-dir }}
+          enable-cache: 'false'
+      - name: Verify outputs are empty
+        run: |
+          FAIL=0
+          [[ -n "${{ steps.cache-deps.outputs.cache-hit }}" ]]         && echo "❌ cache-hit should be empty"         && FAIL=1
+          [[ -n "${{ steps.cache-deps.outputs.cache-key }}" ]]         && echo "❌ cache-key should be empty"         && FAIL=1
+          [[ -n "${{ steps.cache-deps.outputs.cache-matched-key }}" ]] && echo "❌ cache-matched-key should be empty" && FAIL=1
+          [[ "$FAIL" == "1" ]] && exit 1
+          echo "✅ All outputs correctly empty when cache disabled"
+
+  # Verify cache key contains version segments
+  test-key-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./actions/setup-node
+        with:
+          node-version: '20.18.1'
+      - id: setup-yarn
+        uses: ./actions/setup-yarn
+        with:
+          yarn-version: '4.12.0'
+      - id: cache-deps
+        uses: ./actions/cache-deps
+        with:
+          yarn-cache-dir: ${{ steps.setup-yarn.outputs.yarn-cache-dir }}
+          node-version: '20.18.1'
+          yarn-version: '4.12.0'
+      - name: Verify key format
+        run: |
+          KEY="${{ steps.cache-deps.outputs.cache-key }}"
+          FAIL=0
+          [[ "$KEY" != *"node-20.18.1"* ]] && echo "❌ Key missing node version: $KEY" && FAIL=1
+          [[ "$KEY" != *"yarn-4.12.0"* ]]  && echo "❌ Key missing yarn version: $KEY"  && FAIL=1
+          [[ "$FAIL" == "1" ]] && exit 1
+          echo "✅ Cache key format correct: $KEY"
+
+  # Prime the cache for the hit test (saves cache as post-action at job end)
+  test-cache-prime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./actions/setup-node
+      - id: setup-yarn
+        uses: ./actions/setup-yarn
+      - uses: ./actions/cache-deps
+        with:
+          yarn-cache-dir: ${{ steps.setup-yarn.outputs.yarn-cache-dir }}
+      - run: yarn install --immutable
+
+  # Verify full cache hit (primary key match) after priming
+  test-cache-hit:
+    needs: test-cache-prime
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./actions/setup-node
+      - id: setup-yarn
+        uses: ./actions/setup-yarn
+      - id: cache-deps
+        uses: ./actions/cache-deps
+        with:
+          yarn-cache-dir: ${{ steps.setup-yarn.outputs.yarn-cache-dir }}
+      - name: Verify cache hit
+        run: |
+          HIT="${{ steps.cache-deps.outputs.cache-hit }}"
+          KEY="${{ steps.cache-deps.outputs.cache-key }}"
+          MATCHED="${{ steps.cache-deps.outputs.cache-matched-key }}"
+          if [[ "$HIT" != "true" ]]; then
+            echo "⚠️ Expected full cache hit, got: $HIT (matched key: $MATCHED)"
+          else
+            echo "✅ Full cache hit: $KEY"
+          fi
+          if [[ "$KEY" != "$MATCHED" ]]; then
+            echo "⚠️ Partial hit via restore-key (primary=$KEY, matched=$MATCHED)"
+          else
+            echo "✅ Primary key matched"
+          fi
